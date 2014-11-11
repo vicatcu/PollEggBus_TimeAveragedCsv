@@ -52,7 +52,7 @@ void setup(){
   printCoefficients();
   
   Serial.println();
-  Serial.println(F("time_ms, humidity[%], temperature]degC], no2_rs[ohms], no2_est[ppb], co_rs[ohms], co_est[ppb], o3_rs[ohms], o3_est[ppb], dust_concentration[pcs/283mL]"));
+  Serial.println(F("time_ms, humidity[%], temperature]degC], no2_rs[kohms], no2_est[ppb], co_rs[kohms], co_est[ppb], o3_rs[kohms], o3_est[ppb], dust_concentration[pcs/283mL]"));
   
 }
 
@@ -70,16 +70,19 @@ void loop(){
     for(uint8_t ii = 0; ii < numSensors; ii++){         
       if(strcmp_P(eggBus.getSensorType(ii), PSTR("NO2")) == 0){
         no2_rs = eggBus.getSensorResistance(ii);
+        no2_rs /= 1000.0; // convert  to kohms
         no2_rs_squared = no2_rs * no2_rs;
         no2_rs_cubed = no2_rs_squared * no2_rs;
       }
       else if(strcmp_P(eggBus.getSensorType(ii), PSTR("CO")) == 0){
         co_rs = eggBus.getSensorResistance(ii);
+        co_rs /= 1000.0; // convert  to kohms
         co_rs_squared = co_rs * co_rs;
         co_rs_cubed = co_rs_squared * co_rs;        
       }
       else if(strcmp_P(eggBus.getSensorType(ii), PSTR("O3")) == 0){
         o3_rs = eggBus.getSensorResistance(ii);
+        o3_rs /= 1000.0;
         o3_rs_squared = o3_rs * o3_rs;
         o3_rs_cubed = o3_rs_squared * o3_rs;              
       }
@@ -201,11 +204,11 @@ void printCoefficients(void){
   Serial.println(no2_humidity_coeff, 8);  
   Serial.print(F("NO2 C coefficient [ppb]: "));
   Serial.println(no2_c_coeff, 8);  
-  Serial.print(F("NO2 RS coefficient [ppb/ohm]: "));
+  Serial.print(F("NO2 RS coefficient [ppb/kohm]: "));
   Serial.println(no2_rs_coeff, 8);
-  Serial.print(F("NO2 RS^2 coefficient [ppb/ohm^2]: "));
+  Serial.print(F("NO2 RS^2 coefficient [ppb/kohm^2]: "));
   Serial.println(no2_rs2_coeff, 8);
-  Serial.print(F("NO2 RS^3 coefficient [ppb/ohm^3]: "));
+  Serial.print(F("NO2 RS^3 coefficient [ppb/kohm^3]: "));
   Serial.println(no2_rs3_coeff, 8);
  
   Serial.print(F("CO Temperature coefficient [ppm/degC]: "));
@@ -214,11 +217,11 @@ void printCoefficients(void){
   Serial.println(co_humidity_coeff, 8); 
   Serial.print(F("CO C coefficient [ppm]: "));
   Serial.println(co_c_coeff, 8);    
-  Serial.print(F("CO RS coefficient [ppm/ohm]: "));
+  Serial.print(F("CO RS coefficient [ppm/kohm]: "));
   Serial.println(co_rs_coeff, 8);
-  Serial.print(F("CO RS^2 coefficient [ppm/ohm^2]: "));
+  Serial.print(F("CO RS^2 coefficient [ppm/kohm^2]: "));
   Serial.println(co_rs2_coeff, 8);
-  Serial.print(F("CO RS^3 coefficient [ppm/ohm^3]: "));
+  Serial.print(F("CO RS^3 coefficient [ppm/kohm^3]: "));
   Serial.println(co_rs3_coeff, 8);
  
   Serial.print(F("O3 Temperature coefficient [ppb/degC]: "));
@@ -227,11 +230,11 @@ void printCoefficients(void){
   Serial.println(o3_humidity_coeff, 8); 
   Serial.print(F("O3 C coefficient [ppb]: "));
   Serial.println(o3_c_coeff, 8);    
-  Serial.print(F("O3 RS coefficient [ppb/ohm]: "));
+  Serial.print(F("O3 RS coefficient [ppb/kohm]: "));
   Serial.println(o3_rs_coeff, 8);
-  Serial.print(F("O3 RS^2 coefficient [ppb/ohm^2]: "));
+  Serial.print(F("O3 RS^2 coefficient [ppb/kohm^2]: "));
   Serial.println(o3_rs2_coeff, 8);
-  Serial.print(F("O3 RS^3 coefficient [ppb/ohm^3]: "));
+  Serial.print(F("O3 RS^3 coefficient [ppb/kohm^3]: "));
   Serial.println(o3_rs3_coeff, 8);  
 }
 
@@ -273,19 +276,19 @@ void optionallyUpdateCoefficients(void){
     eeprom_write_block(&no2_c_coeff, (void *) NO2_C_COEFF_ADDR, 4);
     Serial.println(no2_c_coeff, 8);   
     
-    Serial.print(F("Enter New NO2 RS coefficient [ppb/ohm]: "));
+    Serial.print(F("Enter New NO2 RS coefficient [ppb/kohm]: "));
     while(Serial.available() == 0){;}; 
     no2_rs_coeff = Serial.parseFloat();
     eeprom_write_block(&no2_rs_coeff, (void *) NO2_RS_COEFF_ADDR, 4);
     Serial.println(no2_rs_coeff, 8);
     
-    Serial.print(F("Enter New NO2 RS^2 coefficient [ppb/ohm^2]: "));
+    Serial.print(F("Enter New NO2 RS^2 coefficient [ppb/kohm^2]: "));
     while(Serial.available() == 0){;}; 
     no2_rs2_coeff = Serial.parseFloat();
     eeprom_write_block(&no2_rs2_coeff, (void *) NO2_RS2_COEFF_ADDR, 4);
     Serial.println(no2_rs2_coeff, 8);
     
-    Serial.print(F("Enter New NO2 RS^3 coefficient [ppb/ohm^3]: "));
+    Serial.print(F("Enter New NO2 RS^3 coefficient [ppb/kohm^3]: "));
     while(Serial.available() == 0){;}; 
     no2_rs3_coeff = Serial.parseFloat();
     eeprom_write_block(&no2_rs3_coeff, (void *) NO2_RS3_COEFF_ADDR, 4);
@@ -326,19 +329,19 @@ void optionallyUpdateCoefficients(void){
     eeprom_write_block(&co_c_coeff, (void *) CO_C_COEFF_ADDR, 4);
     Serial.println(co_c_coeff, 8);
     
-    Serial.print(F("Enter New CO RS coefficient [ppm/ohm]: "));
+    Serial.print(F("Enter New CO RS coefficient [ppm/kohm]: "));
     while(Serial.available() == 0){;}; 
     co_rs_coeff = Serial.parseFloat();
     eeprom_write_block(&co_rs_coeff, (void *) CO_RS_COEFF_ADDR, 4);
     Serial.println(co_rs_coeff, 8);
     
-    Serial.print(F("Enter New CO RS^2 coefficient [ppm/ohm^2]: "));
+    Serial.print(F("Enter New CO RS^2 coefficient [ppm/kohm^2]: "));
     while(Serial.available() == 0){;}; 
     co_rs2_coeff = Serial.parseFloat();
     eeprom_write_block(&co_rs2_coeff, (void *) CO_RS2_COEFF_ADDR, 4);
     Serial.println(co_rs2_coeff, 8);
     
-    Serial.print(F("Enter New CO RS^3 coefficient [ppm/ohm^3]: "));
+    Serial.print(F("Enter New CO RS^3 coefficient [ppm/kohm^3]: "));
     while(Serial.available() == 0){;}; 
     co_rs3_coeff = Serial.parseFloat();
     eeprom_write_block(&co_rs3_coeff, (void *) CO_RS3_COEFF_ADDR, 4);
@@ -379,19 +382,19 @@ void optionallyUpdateCoefficients(void){
     eeprom_write_block(&o3_c_coeff, (void *) O3_C_COEFF_ADDR, 4);
     Serial.println(o3_c_coeff, 8);    
     
-    Serial.print(F("Enter New O3 RS coefficient [ppb/ohm]: "));
+    Serial.print(F("Enter New O3 RS coefficient [ppb/kohm]: "));
     while(Serial.available() == 0){;}; 
     o3_rs_coeff = Serial.parseFloat();
     eeprom_write_block(&o3_rs_coeff, (void *) O3_RS_COEFF_ADDR, 4);
     Serial.println(o3_rs_coeff, 8);
     
-    Serial.print(F("Enter New O3 RS^2 coefficient [ppb/ohm^2]: "));
+    Serial.print(F("Enter New O3 RS^2 coefficient [ppb/kohm^2]: "));
     while(Serial.available() == 0){;}; 
     o3_rs2_coeff = Serial.parseFloat();
     eeprom_write_block(&o3_rs2_coeff, (void *) O3_RS2_COEFF_ADDR, 4);
     Serial.println(o3_rs2_coeff, 8);
     
-    Serial.print(F("Enter New O3 RS^3 coefficient [ppb/ohm^3]: "));
+    Serial.print(F("Enter New O3 RS^3 coefficient [ppb/kohm^3]: "));
     while(Serial.available() == 0){;}; 
     o3_rs3_coeff = Serial.parseFloat();
     eeprom_write_block(&o3_rs3_coeff, (void *) O3_RS3_COEFF_ADDR, 4);
