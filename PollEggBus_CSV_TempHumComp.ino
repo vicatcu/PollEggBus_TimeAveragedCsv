@@ -89,7 +89,6 @@ void loop(){
       else if(strcmp_P(eggBus.getSensorType(ii), PSTR("Dust")) == 0){
         dust_concentration = eggBus.getSensorValue(ii);
       }      
-      Serial.println();
     }
   }
 
