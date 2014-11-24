@@ -2,6 +2,7 @@
 #include <DHT.h>
 #include "Wire.h"
 #include "EggBus.h"
+#include "Time.h"
 #include <avr/eeprom.h>
 
 EggBus eggBus;
@@ -51,6 +52,8 @@ void setup(){
   Serial.println(F("Here are the updated coefficients:"));
   printCoefficients();
   
+  requestCurrentTime();
+  
   Serial.println();
   Serial.println(F("time_ms, humidity[%], temperature]degC], no2_rs[kohms], no2_est[ppb], co_rs[kohms], co_est[ppb], o3_rs[kohms], o3_est[ppb], dust_concentration[pcs/283mL]"));
   
@@ -92,7 +95,8 @@ void loop(){
     }
   }
 
-  Serial.print(millis(), DEC);
+  //Serial.print(millis(), DEC);
+  printTime();
   Serial.print(F(", "));    
   
   humidity = getHumidity();
@@ -401,3 +405,79 @@ void optionallyUpdateCoefficients(void){
    
   }
 } 
+
+void requestCurrentTime(){
+  char buf[8] = {0};
+  uint8_t buf_idx = 0;
+  char c;
+  int m=1,d=1,y=2013,h=0,mn=0,s=0;
+  uint8_t num_ints_received = 0;
+  
+  while(Serial.available()) Serial.read(); // flush the input buffers
+  
+  Serial.print(F("Current Date/Time (M/D/Y H:M:S): "));
+  // collect 6 integers
+  for(;;){
+     if(Serial.available()){
+       c = Serial.read();
+       Serial.print(c);
+       if(c >= '0' && c <= '9' && buf_idx < 7){
+         buf[buf_idx++] = c;
+         buf[buf_idx] = '\0';
+       }
+       else if(c == '/' || c == ':' || c == ' ' || c == '\n' || c == '\r'){
+         switch(num_ints_received){
+         case 0:
+           m = atoi(buf);
+           break;
+         case 1:
+           d = atoi(buf);
+           break;
+         case 2:
+           y = atoi(buf);
+           break;
+         case 3:
+           h = atoi(buf);
+           break;
+         case 4:
+           mn = atoi(buf);
+           break; 
+         case 5:
+           s = atoi(buf);
+           break;         
+         }
+         buf[0] = '\0';
+         buf_idx = 0;
+         num_ints_received++;
+       }
+       
+       if(c == '\n' || c == '\r'){
+         setTime(h,mn,s,d,m,y);
+         Serial.println();
+         Serial.print("Time Set: ");
+         printTime();
+         Serial.println();
+         return;
+       }       
+     }
+  }
+}
+
+void printTime(){
+   time_t _now = now();
+   
+   Serial.print(month(_now));
+   Serial.print(F("/"));
+   Serial.print(day(_now));
+   Serial.print(F("/"));   
+   Serial.print(year(_now));
+   Serial.print(F(" "));   
+   if(hour(_now) < 10) Serial.print(F("0"));
+   Serial.print(hour(_now));
+   Serial.print(F(":"));  
+   if(minute(_now) < 10) Serial.print(F("0")); 
+   Serial.print(minute(_now));
+   Serial.print(F(":"));   
+   if(second(_now) < 10) Serial.print(F("0"));
+   Serial.print(second(_now));  
+}
