@@ -75,9 +75,11 @@ void setup(){
 
 void loop(){
   uint8_t   egg_bus_address;
-  float temperature = 0.0f, humidity = 0.0f, no2_est = 0.0f, co_est = 0.0f, o3_est = 0.0f;
-  float no2_rs = 0.0f, co_rs = 0.0f, o3_rs = 0.0f, dust_concentration = 0.0f;
-  float no2_rs_squared = 0.0f, no2_rs_cubed = 0.0f, co_rs_squared = 0.0f, co_rs_cubed = 0.0f, o3_rs_squared = 0.0f, o3_rs_cubed = 0.0f;
+  float temperature = 0.0f, humidity = 0.0f, no2_est = 0.0f, co_est = 0.0f, o3_est = 0.0f, dust_est = 0.0f;
+  float no2_rs = 0.0f, no2_rs_squared = 0.0f, no2_rs_cubed = 0.0f, 
+        co_rs = 0.0f, co_rs_squared = 0.0f, co_rs_cubed = 0.0f, 
+        o3_rs = 0.0f, o3_rs_squared = 0.0f, o3_rs_cubed = 0.0f, 
+        dust_pct_occupancy = 0.0f, dust_pct_occupancy_squared = 0.0f, dust_pct_occupancy_cubed = 0.0f;
   
   eggBus.init();
     
@@ -104,7 +106,10 @@ void loop(){
         o3_rs_cubed = o3_rs_squared * o3_rs;              
       }
       else if(strcmp_P(eggBus.getSensorType(ii), PSTR("Dust")) == 0){
-        dust_concentration = eggBus.getSensorValue(ii);
+        dust_pct_occupancy = eggBus.getSensorResistance(ii);
+        dust_pct_occupancy /= 10.0f; // raw is in units of "tenths of a percent"
+        dust_pct_occupancy_squared = dust_pct_occupancy * dust_pct_occupancy;
+        dust_pct_occupancy_cubed = dust_pct_occupancy_squared * dust_pct_occupancy;
       }      
     }
   }
@@ -144,6 +149,13 @@ void loop(){
     + (o3_rs2_coeff * o3_rs_squared)
     + (o3_rs3_coeff * o3_rs_cubed);  
   
+  dust_est = dust_c_coeff 
+    + (dust_temperature_coeff * temperature)
+    + (dust_humidity_coeff * humidity)    
+    + (dust_rs_coeff * dust_pct_occupancy)
+    + (dust_rs2_coeff * dust_pct_occupancy_squared)
+    + (dust_rs3_coeff * dust_pct_occupancy_cubed);
+  
   Serial.print(no2_rs, 3);
   Serial.print(F(", "));  
   Serial.print(no2_est, 3);
@@ -159,7 +171,9 @@ void loop(){
   Serial.print(o3_est, 3);
   Serial.print(F(", "));    
   
-  Serial.print(dust_concentration, 3);
+  Serial.print(dust_pct_occupancy, 3);
+  Serial.print(F(", "));   
+  Serial.print(dust_est, 3);
   
   Serial.println();
 }
