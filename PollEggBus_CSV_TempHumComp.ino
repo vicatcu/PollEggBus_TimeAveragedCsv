@@ -69,7 +69,7 @@ void setup(){
   requestCurrentTime();
   
   Serial.println();
-  Serial.println(F("time_ms, humidity[%], temperature]degC], no2_rs[kohms], no2_est[ppb], co_rs[kohms], co_est[ppb], o3_rs[kohms], o3_est[ppb], dust_concentration[pcs/283mL]"));
+  Serial.println(F("time_ms, humidity[%], temperature]degC], no2_rs[kohms], no2_est[ppb], co_rs[kohms], co_est[ppb], o3_rs[kohms], o3_est[ppb], dust_rs [%], dust_est[ug/m^3]"));
   
 }
 
