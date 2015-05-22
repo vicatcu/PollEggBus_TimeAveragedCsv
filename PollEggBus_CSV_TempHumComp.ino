@@ -42,12 +42,19 @@ EggBus eggBus;
 #define DUST_HUM_COEFF_ADDR  (352)
 
 DHT dht(DHTPIN, DHTTYPE);
-
 boolean no2_coeff_valid = false, co_coeff_valid = false, o3_coeff_valid = false, dust_coeff_valid = false;
 float no2_c_coeff = 0.0f, no2_rs_coeff = 0.0f, no2_rs2_coeff = 0.0f, no2_rs3_coeff = 0.0f;
+uint32_t no2_adc, no2_low_r, no2_sensor_voltage_mv, no2_adc_voltage_mv, no2_max_adc_value;
+
 float co_c_coeff = 0.0f, co_rs_coeff = 0.0f, co_rs2_coeff = 0.0f, co_rs3_coeff = 0.0f;
+uint32_t co_adc, co_low_r, co_sensor_voltage_mv, co_adc_voltage_mv, co_max_adc_value;
+
 float o3_c_coeff = 0.0f, o3_rs_coeff = 0.0f, o3_rs2_coeff = 0.0f, o3_rs3_coeff = 0.0f;
+uint32_t o3_adc, o3_low_r, o3_sensor_voltage_mv, o3_adc_voltage_mv, o3_max_adc_value;
+
 float dust_c_coeff = 0.0f, dust_rs_coeff = 0.0f, dust_rs2_coeff = 0.0f, dust_rs3_coeff = 0.0f;
+uint32_t dust_adc, dust_low_r, dust_sensor_voltage_mv, dust_adc_voltage_mv, dust_max_adc_value;
+
 float no2_temperature_coeff = 0.0f, no2_humidity_coeff = 0.0f;
 float co_temperature_coeff = 0.0f, co_humidity_coeff = 0.0f;
 float o3_temperature_coeff = 0.0f, o3_humidity_coeff = 0.0f;
@@ -61,16 +68,22 @@ void setup(){
   Serial.println(F("Here are the stored coefficients:"));
   printCoefficients();
   
-  optionallyUpdateCoefficients();
+  boolean user_entered_something = optionallyUpdateCoefficients();
 
   Serial.println(F("Here are the updated coefficients:"));
   printCoefficients();
   
-  requestCurrentTime();
+  if(user_entered_something){
+    requestCurrentTime();
+  }
   
   Serial.println();
-  Serial.println(F("time_ms, humidity[%], temperature]degC], no2_rs[kohms], no2_est[ppb], co_rs[kohms], co_est[ppb], o3_rs[kohms], o3_est[ppb], dust_rs [%], dust_est[ug/m^3]"));
-  
+  Serial.print(F("time_ms, humidity[%], temperature]degC], no2_rs[kohms], no2_est[ppb], co_rs[kohms], co_est[ppb], o3_rs[kohms], o3_est[ppb], dust_rs [%], dust_est[ug/m^3]"));
+  Serial.print(F(", NO2[adc_count], NO2[low_r], NO2[sensor_mv], NO2[adc_mv], NO2[max_max_adc_count]"));
+  Serial.print(F(", CO[adc_count], CO[low_r], CO[sensor_mv], CO[adc_mv], CO[max_max_adc_count]"));
+  Serial.print(F(", O3[adc_count], O3[low_r], O3[sensor_mv], O3[adc_mv], O3[max_max_adc_count]"));  
+  Serial.print(F(", Dust[adc_count], Dust[low_r], Dust[sensor_mv], Dust[adc_mv], Dust[max_max_adc_count]"));    
+  Serial.println();
 }
 
 void loop(){
@@ -92,24 +105,28 @@ void loop(){
         no2_rs /= 1000.0; // convert  to kohms
         no2_rs_squared = no2_rs * no2_rs;
         no2_rs_cubed = no2_rs_squared * no2_rs;
+        eggBus.getSensorAdcAndLow(ii, &no2_adc, &no2_low_r, &no2_sensor_voltage_mv, &no2_adc_voltage_mv, &no2_max_adc_value);
       }
       else if(strcmp_P(eggBus.getSensorType(ii), PSTR("CO")) == 0){
         co_rs = eggBus.getSensorResistance(ii);
         co_rs /= 1000.0; // convert  to kohms
         co_rs_squared = co_rs * co_rs;
-        co_rs_cubed = co_rs_squared * co_rs;        
+        co_rs_cubed = co_rs_squared * co_rs;       
+        eggBus.getSensorAdcAndLow(ii, &co_adc, &co_low_r, &co_sensor_voltage_mv, &co_adc_voltage_mv, &co_max_adc_value); 
       }
       else if(strcmp_P(eggBus.getSensorType(ii), PSTR("O3")) == 0){
         o3_rs = eggBus.getSensorResistance(ii);
         o3_rs /= 1000.0;
         o3_rs_squared = o3_rs * o3_rs;
-        o3_rs_cubed = o3_rs_squared * o3_rs;              
+        o3_rs_cubed = o3_rs_squared * o3_rs;       
+        eggBus.getSensorAdcAndLow(ii, &o3_adc, &o3_low_r, &o3_sensor_voltage_mv, &o3_adc_voltage_mv, &o3_max_adc_value);        
       }
       else if(strcmp_P(eggBus.getSensorType(ii), PSTR("Dust")) == 0){
         dust_pct_occupancy = eggBus.getSensorResistance(ii);
         dust_pct_occupancy /= 10.0f; // raw is in units of "tenths of a percent"
         dust_pct_occupancy_squared = dust_pct_occupancy * dust_pct_occupancy;
         dust_pct_occupancy_cubed = dust_pct_occupancy_squared * dust_pct_occupancy;
+        eggBus.getSensorAdcAndLow(ii, &dust_adc, &dust_low_r, &dust_sensor_voltage_mv, &dust_adc_voltage_mv, &dust_max_adc_value);
       }      
     }
   }
@@ -174,6 +191,50 @@ void loop(){
   Serial.print(dust_pct_occupancy, 3);
   Serial.print(F(", "));   
   Serial.print(dust_est, 3);
+  Serial.print(F(", ")); 
+  
+  Serial.print(no2_adc);
+  Serial.print(F(", ")); 
+  Serial.print(no2_low_r);
+  Serial.print(F(", ")); 
+  Serial.print(no2_sensor_voltage_mv);
+  Serial.print(F(", ")); 
+  Serial.print(no2_adc_voltage_mv);
+  Serial.print(F(", ")); 
+  Serial.print(no2_max_adc_value);
+  Serial.print(F(", "));   
+  
+  Serial.print(co_adc);
+  Serial.print(F(", ")); 
+  Serial.print(co_low_r);
+  Serial.print(F(", ")); 
+  Serial.print(co_sensor_voltage_mv);
+  Serial.print(F(", ")); 
+  Serial.print(co_adc_voltage_mv);
+  Serial.print(F(", ")); 
+  Serial.print(co_max_adc_value);
+  Serial.print(F(", ")); 
+
+  Serial.print(o3_adc);
+  Serial.print(F(", ")); 
+  Serial.print(o3_low_r);
+  Serial.print(F(", ")); 
+  Serial.print(o3_sensor_voltage_mv);
+  Serial.print(F(", ")); 
+  Serial.print(o3_adc_voltage_mv);
+  Serial.print(F(", ")); 
+  Serial.print(o3_max_adc_value);
+  Serial.print(F(", ")); 
+
+  Serial.print(dust_adc);
+  Serial.print(F(", ")); 
+  Serial.print(dust_low_r);
+  Serial.print(F(", ")); 
+  Serial.print(dust_sensor_voltage_mv);
+  Serial.print(F(", ")); 
+  Serial.print(dust_adc_voltage_mv);
+  Serial.print(F(", ")); 
+  Serial.print(dust_max_adc_value);
   
   Serial.println();
 }
@@ -300,7 +361,7 @@ void printCoefficients(void){
   Serial.println(dust_rs3_coeff, 8);
 }
 
-void optionallyUpdateCoefficients(void){
+boolean optionallyUpdateCoefficients(void){
   boolean change_coefficients = false;
   char ch = 0;
   uint32_t now = millis();
@@ -308,13 +369,12 @@ void optionallyUpdateCoefficients(void){
 
   Serial.print(F("Do you want to change the NO2 coefficients? Y/N: "));
   for(;;){
-
-    if(millis() > timeout){
-      Serial.print(F("Skipping coefficient entry"));
-      return;
+    while(Serial.available() == 0){
+      if(millis() > timeout){
+        Serial.print(F("Skipping coefficient entry"));
+        return false;
+      }      
     }
-
-    while(Serial.available() == 0){;};
     ch = Serial.read();
     if(ch == 'N' || ch == 'n'){
       change_coefficients = false;
@@ -533,6 +593,8 @@ void optionallyUpdateCoefficients(void){
     eeprom_write_byte((uint8_t *) DUST_COEFF_VALID, MAGIC_NUMBER);
 
   }
+  
+  return true;
 } 
 
 void requestCurrentTime(){
