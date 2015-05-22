@@ -18,7 +18,11 @@ float no2_calc_buffer[BUFFER_DEPTH], co_calc_buffer[BUFFER_DEPTH], o3_calc_buffe
 
 uint8_t buffer_index = 0;
 boolean start_recording = false;
-uint32_t loop_count = 0;
+
+unsigned long previousMillis = 0;      // will store last time LED was updated
+
+// constants won't change :
+const long interval = 60000;           // interval at which to blink (milliseconds)
 
 void setup(){
   Serial.begin(115200);
@@ -34,6 +38,7 @@ void loop(){
   float temperature = 0.0f, humidity = 0.0f;
   float no2_rs = 0.0f, co_rs = 0.0f, o3_rs = 0.0f, dust_pct_occupancy = 0.0f;
   float no2_calc = 0.0f, co_calc = 0.0f, o3_calc = 0.0f, dust_calc = 0.0f;
+  unsigned long currentMillis = millis();
   
   eggBus.init();
   
@@ -79,51 +84,48 @@ void loop(){
   if(buffer_index >= BUFFER_DEPTH){
     buffer_index = 0;
     start_recording = true;
-    loop_count = 0;
   }
 
   buffer_index++;
 
-  delay(2697); // tuned delay so that readings happen about ever 3 seconds with processing overhead
+  if(start_recording){
+    if(currentMillis - previousMillis >= interval) {    
+      previousMillis = currentMillis; 
+      Serial.print(millis());
+      Serial.print(F(","));
+      
+      Serial.print(buffer_average(humidity_buffer), 3);
+      Serial.print(F(", "));
+      
+      Serial.print(buffer_average(temperature_buffer), 3);
+      Serial.print(F(", "));
+      
+      Serial.print(buffer_average(no2_raw_buffer), 3);
+      Serial.print(F(", "));
+      
+      Serial.print(buffer_average(co_raw_buffer), 3);
+      Serial.print(F(", "));
+      
+      Serial.print(buffer_average(o3_raw_buffer), 3);
+      Serial.print(F(", "));
+      
+      Serial.print(buffer_average(dust_raw_buffer), 3);
+      Serial.print(F(", "));
   
-  if(start_recording && (loop_count % 60) == 0){
-    Serial.print(millis());
-    Serial.print(F(","));
-    
-    Serial.print(buffer_average(humidity_buffer), 3);
-    Serial.print(F(", "));
-    
-    Serial.print(buffer_average(temperature_buffer), 3);
-    Serial.print(F(", "));
-    
-    Serial.print(buffer_average(no2_raw_buffer), 3);
-    Serial.print(F(", "));
-    
-    Serial.print(buffer_average(co_raw_buffer), 3);
-    Serial.print(F(", "));
-    
-    Serial.print(buffer_average(o3_raw_buffer), 3);
-    Serial.print(F(", "));
-    
-    Serial.print(buffer_average(dust_raw_buffer), 3);
-    Serial.print(F(", "));
-
-    Serial.print(buffer_average(no2_calc_buffer), 3);
-    Serial.print(F(", "));
-    
-    Serial.print(buffer_average(co_calc_buffer), 3);
-    Serial.print(F(", "));
-    
-    Serial.print(buffer_average(o3_calc_buffer), 3);
-    Serial.print(F(", "));
-    
-    Serial.print(buffer_average(dust_calc_buffer), 3);
-    Serial.print(F(", "));
-        
-    Serial.println();
+      Serial.print(buffer_average(no2_calc_buffer), 3);
+      Serial.print(F(", "));
+      
+      Serial.print(buffer_average(co_calc_buffer), 3);
+      Serial.print(F(", "));
+      
+      Serial.print(buffer_average(o3_calc_buffer), 3);
+      Serial.print(F(", "));
+      
+      Serial.print(buffer_average(dust_calc_buffer), 3);
+          
+      Serial.println();
+    }
   }
-  
-  loop_count++;
 }
 
 //--------- DHT22 humidity ---------
