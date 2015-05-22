@@ -19,80 +19,91 @@ float no2_calc_buffer[BUFFER_DEPTH], co_calc_buffer[BUFFER_DEPTH], o3_calc_buffe
 uint8_t buffer_index = 0;
 boolean start_recording = false;
 
-unsigned long previousMillis = 0;      // will store last time LED was updated
+unsigned long previousMillis_report = 0;      // will store last time LED was updated
 
 // constants won't change :
-const long interval = 60000;           // interval at which to blink (milliseconds)
+const long interval_report = 60000;           // interval at which to blink (milliseconds)
+
+unsigned long previousMillis_sample = 0;      // will store last time LED was updated
+
+// constants won't change :
+const long interval_sample = 3000;           // interval at which to blink (milliseconds)
 
 void setup(){
   Serial.begin(115200);
   Serial.println(F("Air Quality Egg - CSV data w/ Time Averaged"));
   Serial.println(F("======================================================================"));
-  Serial.print(F("millis, humidity[%], temperature]degC], no2_rs[kohms], co_rs[kohms], o3_rs[kohms], dust_rs [%], "));
+  Serial.print(F("millis, humidity[%], temperature[degC], no2_rs[kohms], co_rs[kohms], o3_rs[kohms], dust_rs [%], "));
   Serial.print(F("no2[ppb], co[ppm], o3[ppb], dust[pcs/283mL]"));
   Serial.println();
 }
 
 void loop(){
-  uint8_t   egg_bus_address;
+  uint8_t egg_bus_address;
   float temperature = 0.0f, humidity = 0.0f;
   float no2_rs = 0.0f, co_rs = 0.0f, o3_rs = 0.0f, dust_pct_occupancy = 0.0f;
   float no2_calc = 0.0f, co_calc = 0.0f, o3_calc = 0.0f, dust_calc = 0.0f;
   unsigned long currentMillis = millis();
   
-  eggBus.init();
-  
-  // collect sensor resistances
-  while((egg_bus_address = eggBus.next())){
-    uint8_t numSensors = eggBus.getNumSensors();
-    for(uint8_t ii = 0; ii < numSensors; ii++){         
-      if(strcmp_P(eggBus.getSensorType(ii), PSTR("NO2")) == 0){
-        no2_rs = eggBus.getSensorResistance(ii);
-        no2_calc = eggBus.getSensorValue(ii);
-      }
-      else if(strcmp_P(eggBus.getSensorType(ii), PSTR("CO")) == 0){
-        co_rs = eggBus.getSensorResistance(ii);
-        co_calc = eggBus.getSensorValue(ii);        
-      }
-      else if(strcmp_P(eggBus.getSensorType(ii), PSTR("O3")) == 0){
-        o3_rs = eggBus.getSensorResistance(ii);
-        o3_calc = eggBus.getSensorValue(ii);        
-      }
-      else if(strcmp_P(eggBus.getSensorType(ii), PSTR("Dust")) == 0){
-        dust_pct_occupancy = eggBus.getSensorResistance(ii);
-        dust_calc = eggBus.getSensorValue(ii);        
+  if(currentMillis - previousMillis_sample >= interval_sample) {      
+    previousMillis_sample = currentMillis;
+    
+    eggBus.init();
+    
+    // collect sensor resistances
+    while((egg_bus_address = eggBus.next())){
+      uint8_t numSensors = eggBus.getNumSensors();
+      for(uint8_t ii = 0; ii < numSensors; ii++){
+        if(strcmp_P(eggBus.getSensorType(ii), PSTR("NO2")) == 0){
+          no2_rs = eggBus.getSensorResistance(ii);
+          no2_calc = eggBus.getSensorValue(ii);
+        }
+        else if(strcmp_P(eggBus.getSensorType(ii), PSTR("CO")) == 0){
+          co_rs = eggBus.getSensorResistance(ii);
+          co_calc = eggBus.getSensorValue(ii);        
+        }
+        else if(strcmp_P(eggBus.getSensorType(ii), PSTR("O3")) == 0){
+          o3_rs = eggBus.getSensorResistance(ii);
+          o3_calc = eggBus.getSensorValue(ii);        
+        }
+        else if(strcmp_P(eggBus.getSensorType(ii), PSTR("Dust")) == 0){
+          dust_pct_occupancy = eggBus.getSensorResistance(ii);
+          dust_calc = eggBus.getSensorValue(ii);        
+        }
       }
     }
-  }
-
-  humidity = getHumidity();
-  temperature = getTemperature();
-
-  humidity_buffer[buffer_index] = humidity;
-  temperature_buffer[buffer_index] = temperature;
-
-  no2_calc_buffer[buffer_index] = no2_calc;
-  co_calc_buffer[buffer_index] = co_calc;
-  o3_calc_buffer[buffer_index] = o3_calc;
-  dust_calc_buffer[buffer_index] = dust_calc;  
   
-  no2_raw_buffer[buffer_index] = no2_rs;
-  co_raw_buffer[buffer_index] = co_rs;
-  o3_raw_buffer[buffer_index] = o3_rs;
-  dust_raw_buffer[buffer_index] = dust_pct_occupancy;
+    humidity = getHumidity();
+    delay(1000);
+    temperature = getTemperature();
+   
+    humidity_buffer[buffer_index] = humidity;
+    temperature_buffer[buffer_index] = temperature;
   
-  if(buffer_index >= BUFFER_DEPTH){
-    buffer_index = 0;
-    start_recording = true;
-  }
+    no2_calc_buffer[buffer_index] = no2_calc;
+    co_calc_buffer[buffer_index] = co_calc;
+    o3_calc_buffer[buffer_index] = o3_calc;
+    dust_calc_buffer[buffer_index] = dust_calc;  
+    
+    no2_raw_buffer[buffer_index] = no2_rs;
+    co_raw_buffer[buffer_index] = co_rs;
+    o3_raw_buffer[buffer_index] = o3_rs;
+    dust_raw_buffer[buffer_index] = dust_pct_occupancy;
 
-  buffer_index++;
+    buffer_index++;    
+    if(buffer_index >= BUFFER_DEPTH){
+      buffer_index = 0;
+      start_recording = true;
+    }
+  
+  }
 
   if(start_recording){
-    if(currentMillis - previousMillis >= interval) {    
-      previousMillis = currentMillis; 
+    if(currentMillis - previousMillis_report >= interval_report) {    
+      previousMillis_report = currentMillis; 
+      
       Serial.print(millis());
-      Serial.print(F(","));
+      Serial.print(F(","));            
       
       Serial.print(buffer_average(humidity_buffer), 3);
       Serial.print(F(", "));
