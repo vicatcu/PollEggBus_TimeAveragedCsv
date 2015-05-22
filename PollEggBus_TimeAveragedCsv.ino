@@ -24,7 +24,7 @@ void setup(){
   Serial.begin(115200);
   Serial.println(F("Air Quality Egg - CSV data w/ Time Averaged"));
   Serial.println(F("======================================================================"));
-  Serial.print(F("humidity[%], temperature]degC], no2_rs[kohms], co_rs[kohms], o3_rs[kohms], dust_rs [%], "));
+  Serial.print(F("millis, humidity[%], temperature]degC], no2_rs[kohms], co_rs[kohms], o3_rs[kohms], dust_rs [%], "));
   Serial.print(F("no2[ppb], co[ppm], o3[ppb], dust[pcs/283mL]"));
   Serial.println();
 }
@@ -84,10 +84,10 @@ void loop(){
 
   buffer_index++;
 
-  delay(3000);
+  delay(2697); // tuned delay so that readings happen about ever 3 seconds with processing overhead
   
   if(start_recording && (loop_count % 60) == 0){
-    Serial.println(millis());
+    Serial.print(millis());
     Serial.print(F(","));
     
     Serial.print(buffer_average(humidity_buffer), 3);
